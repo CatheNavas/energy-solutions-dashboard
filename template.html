@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Solutions · Dashboard OTs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+:root{
+  --navy:#1e3a5f;--navy-dark:#0f2240;--indigo:#3730a3;
+  --claude:#D97757;--slate-bg:#f1f5f9;--slate-100:#e2e8f0;--slate-200:#cbd5e1;
+  --slate-400:#94a3b8;--slate-600:#475569;--slate-800:#1e293b;
+  --white:#ffffff;
+  --green:#059669;--green-lt:#d1fae5;
+  --red:#e11d48;--red-lt:#ffe4e6;
+  --amber:#d97706;--amber-lt:#fef3c7;
+  --purple:#7c3aed;--purple-lt:#ede9fe;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--slate-bg);color:var(--slate-800);font-family:'Inter',sans-serif;min-height:100vh;}
+header{background:linear-gradient(135deg,var(--navy-dark),var(--navy) 50%,var(--indigo));padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow-lg);}
+.logo-area{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:var(--claude);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-text h1{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;color:#fff;}
+.logo-text p{font-size:10px;color:rgba(255,255,255,.5);}
+.header-right{display:flex;gap:5px;align-items:center;}
+.period-btn{padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;}
+.period-btn.active{background:var(--claude);border-color:var(--claude);color:#fff;}
+.period-btn:hover:not(.active){background:rgba(255,255,255,.1);color:#fff;}
+.last-upd{font-size:10px;color:rgba(255,255,255,.5);padding:4px 10px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.12);margin-left:4px;}
+.pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.main-tabs{display:flex;background:var(--white);border-bottom:1px solid var(--slate-200);padding:0 28px;box-shadow:var(--shadow-sm);}
+.main-tab{padding:13px 20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:12px;color:var(--slate-400);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.main-tab:hover:not(.active){color:var(--slate-600);}
+.main-tab.active{color:var(--navy);border-bottom-color:var(--claude);}
+.tab-chip{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;}
+.chip-ot{background:rgba(30,58,95,.1);color:var(--navy);}
+.chip-prev{background:var(--purple-lt);color:var(--purple);}
+.chip-ejec{background:rgba(217,119,87,.12);color:var(--claude);}
+
+/* FILTERS */
+.filters-bar{padding:10px 28px;background:var(--white);border-bottom:1px solid var(--slate-100);display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.filter-label{font-size:10px;color:var(--slate-400);font-weight:700;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;}
+select,input[type=date]{background:var(--slate-bg);border:1px solid var(--slate-200);color:var(--slate-800);padding:6px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;outline:none;transition:border-color .15s,box-shadow .15s;}
+select:focus,input[type=date]:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.1);}
+.filter-range-info{font-size:11px;color:var(--navy);font-weight:600;padding:5px 10px;background:rgba(30,58,95,.06);border-radius:6px;border:1px solid rgba(30,58,95,.15);}
+.meta-badge{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:5px 10px;background:var(--amber-lt);border-radius:5px;border:1px solid rgba(217,119,87,.3);color:var(--amber);}
+.data-info{font-size:10px;color:var(--slate-400);padding:4px 9px;background:var(--slate-bg);border-radius:5px;border:1px solid var(--slate-200);}
+
+.panel{display:none;padding:20px 28px;}
+.panel.active{display:block;}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.kpi-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .15s;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+.kpi-accent{position:absolute;top:0;left:0;width:4px;height:100%;}
+.kpi-label{font-size:9px;color:var(--slate-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.kpi-value{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:26px;line-height:1;margin-bottom:3px;letter-spacing:-1px;}
+.kpi-sub{font-size:10px;color:var(--slate-400);}
+.kpi-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;margin-top:4px;}
+.badge-green{background:var(--green-lt);color:var(--green);}
+.badge-red{background:var(--red-lt);color:var(--red);}
+
+.section-label{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--slate-400);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--slate-100);}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px;}
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+.charts-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.chart-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:18px;box-shadow:var(--shadow-sm);}
+.chart-card.a-navy{border-top:3px solid var(--navy);}
+.chart-card.a-claude{border-top:3px solid var(--claude);}
+.chart-card.a-purple{border-top:3px solid var(--purple);}
+.chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.chart-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:12px;color:var(--slate-800);}
+.chart-sub{font-size:10px;color:var(--slate-400);margin-top:2px;}
+.cpill{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
+.cpill-ok{background:var(--green-lt);color:var(--green);}
+.cpill-warn{background:var(--amber-lt);color:var(--amber);}
+.cpill-bad{background:var(--red-lt);color:var(--red);}
+.cpill-navy{background:rgba(30,58,95,.08);color:var(--navy);}
+.cpill-pur{background:var(--purple-lt);color:var(--purple);}
+.cpill-cl{background:rgba(217,119,87,.12);color:var(--claude);}
+canvas{max-height:220px;}
+.table-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-family:'Plus Jakarta Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--slate-400);padding:9px 11px;text-align:left;border-bottom:2px solid var(--slate-100);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--slate-100);transition:background .1s;}
+tbody tr:hover{background:var(--slate-bg);}
+tbody td{padding:10px 11px;font-size:11px;vertical-align:middle;}
+.svc-name{font-weight:600;}
+.progress-track{width:100%;height:5px;background:var(--slate-100);border-radius:3px;overflow:hidden;margin-top:3px;}
+.progress-fill{height:100%;border-radius:3px;}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:9px;font-weight:700;}
+.tag-ok{background:var(--green-lt);color:var(--green);}
+.tag-warn{background:var(--amber-lt);color:var(--amber);}
+.tag-bad{background:var(--red-lt);color:var(--red);}
+.sigla-chip{display:inline-block;padding:2px 8px;border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:11px;letter-spacing:1px;}
+.op-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;}
+.op-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--slate-bg);border-radius:8px;border:1px solid var(--slate-100);transition:border-color .12s;}
+.op-item:hover{border-color:var(--navy);}
+.op-name{font-size:11px;font-weight:500;}
+.op-meta{display:flex;align-items:center;gap:9px;}
+.op-pct{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:13px;min-width:36px;text-align:right;}
+.mini-bar{width:60px;height:4px;background:var(--slate-100);border-radius:2px;overflow:hidden;}
+.mini-fill{height:100%;border-radius:2px;}
+.type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px;}
+.type-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:14px;box-shadow:var(--shadow-sm);transition:transform .15s;}
+.type-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+.tc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.tc-sigla{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;letter-spacing:1px;}
+.tc-badge{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;}
+.tc-desc{font-size:9px;color:var(--slate-400);margin-bottom:10px;line-height:1.4;}
+.tc-nums{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:7px;}
+.tc-total{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;}
+.tc-pct-wrap{text-align:right;}
+.tc-pct{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;}
+.tc-pct-lbl{font-size:8px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.8px;}
+.tc-bar{height:4px;background:var(--slate-100);border-radius:2px;overflow:hidden;}
+.tc-fill{height:100%;border-radius:2px;}
+.legend-row{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--slate-600);}
+.ldot{width:7px;height:7px;border-radius:50%;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--slate-100);}
+::-webkit-scrollbar-thumb{background:var(--slate-200);border-radius:2px;}
+@media(max-width:1200px){.kpi-strip{grid-template-columns:repeat(3,1fr);}.charts-grid{grid-template-columns:1fr;}.charts-row{grid-template-columns:1fr 1fr;}.type-grid{grid-template-columns:repeat(2,1fr);}.bottom-grid{grid-template-columns:1fr;}}
+@media(max-width:700px){.panel{padding:12px;}.kpi-strip{grid-template-columns:1fr 1fr;}.charts-row{grid-template-columns:1fr;}.type-grid{grid-template-columns:1fr 1fr;}.charts-row2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-area">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text"><h1>Energy Solutions</h1><p>Dashboard · OTs · Datos reales Metabase</p></div>
+  </div>
+  <div class="header-right">
+    <button class="period-btn active" onclick="setPeriod('diario')">Diario</button>
+    <button class="period-btn" onclick="setPeriod('semanal')">Semanal</button>
+    <button class="period-btn" onclick="setPeriod('mensual')">Mensual</button>
+    <div class="last-upd"><span class="pulse"></span>__TOTAL__ OTs · Actualizado: __UPDATED_AT__</div>
+  </div>
+</header>
+
+<div class="main-tabs">
+  <button class="main-tab active" onclick="setTab('ots')">⚙️ OTs Generales <span class="tab-chip chip-ot">TODOS</span></button>
+  <button class="main-tab" onclick="setTab('previas')">🔍 Visitas Previas <span class="tab-chip chip-prev">PREA·PREM·VPNT·PVIC·PREB·PREC</span></button>
+  <button class="main-tab" onclick="setTab('ejecucion')">✅ Ejecución <span class="tab-chip chip-ejec">AMCA·MANT·ISNT·BICH·COND</span></button>
+</div>
+
+<div class="filters-bar">
+  <span class="filter-label">Operador:</span>
+  <select id="fOperador" onchange="applyFilters()"><option value="">Todos</option></select>
+  <span class="filter-label">Desde:</span>
+  <input type="date" id="fStart" onchange="applyFilters()"/>
+  <span class="filter-label">Hasta:</span>
+  <input type="date" id="fEnd" onchange="applyFilters()"/>
+  <button onclick="resetDates()" style="padding:5px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">↺ Reset fechas</button>
+  <div class="filter-range-info" id="rangeInfo">—</div>
+  <div class="meta-badge">⚡ Meta ≥ 80%</div>
+  <div class="data-info">📊 472 OTs Energy Solutions</div>
+</div>
+
+<!-- OTs PANEL -->
+<div class="panel active" id="panel-ots">
+  <div class="section-label">Indicadores · <span id="otViewLabel">—</span> · <span id="otRangeLabel" style="color:var(--navy);font-weight:800">—</span></div>
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--navy)"></div><div class="kpi-label">OTs Totales</div><div class="kpi-value" id="ot-total" style="color:var(--navy)">—</div><div class="kpi-sub">En el rango seleccionado</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-label">Cierre Exitoso</div><div class="kpi-value" id="ot-exec" style="color:var(--green)">—</div><div class="kpi-sub">Ejecutadas</div><span class="kpi-badge" id="ot-exec-badge"></span></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-label">Cierre Fallido</div><div class="kpi-value" id="ot-fail" style="color:var(--red)">—</div><div class="kpi-sub">No ejecutadas</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--amber)"></div><div class="kpi-label">Canceladas</div><div class="kpi-value" id="ot-cancel" style="color:var(--amber)">—</div><div class="kpi-sub">Cierre cancelado</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--claude)"></div><div class="kpi-label">% Ejecución</div><div class="kpi-value" id="ot-pct" style="color:var(--claude)">—</div><div class="kpi-sub">Meta ≥ 80%</div><span class="kpi-badge" id="ot-meta-badge"></span></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card a-navy"><div class="chart-header"><div><div class="chart-title">OTs por período</div><div class="chart-sub" id="otExecSub">—</div></div><span class="cpill" id="otExecPill">—</span></div><canvas id="otExecChart"></canvas></div>
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">Distribución estados</div><div class="chart-sub">Rango seleccionado</div></div></div><canvas id="otDonutChart"></canvas></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card a-navy"><div class="chart-header"><div><div class="chart-title">% Ejecución por Servicio</div><div class="chart-sub">Vs meta 80%</div></div></div><canvas id="otSvcChart"></canvas></div>
+    <div class="chart-card a-navy"><div class="chart-header"><div><div class="chart-title">Tendencia histórica</div><div class="chart-sub">% ejecución en el tiempo</div></div></div><canvas id="otTrendChart"></canvas></div>
+    <div class="chart-card a-navy"><div class="chart-header"><div><div class="chart-title">OTs por Operador</div><div class="chart-sub">Top operadores de red</div></div></div><canvas id="otOpChart"></canvas></div>
+  </div>
+  <div class="section-label">Detalle por tipo de servicio</div>
+  <div class="legend-row">
+    <div class="legend-item"><div class="ldot" style="background:var(--green)"></div>≥80% Cumple</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--amber)"></div>60–79% Riesgo</div>
+    <div class="legend-item"><div class="ldot" style="background:var(--red)"></div>&lt;60% Crítico</div>
+  </div>
+  <div class="table-card"><table><thead><tr><th>Servicio</th><th>Total</th><th>Exitoso</th><th>Fallido</th><th>Cancelado</th><th>% Ejec.</th><th style="min-width:100px">Progreso</th><th>Estado</th></tr></thead><tbody id="otSvcTable"></tbody></table></div>
+  <div class="bottom-grid">
+    <div class="chart-card a-navy"><div class="chart-header"><div><div class="chart-title">Cumplimiento por Operador</div><div class="chart-sub">% vs meta 80%</div></div></div><div class="op-list" id="otOpList"></div></div>
+    <div class="chart-card a-navy"><div class="chart-header"><div><div class="chart-title">Radar de cobertura</div><div class="chart-sub">Servicios vs meta 80%</div></div></div><canvas id="otRadarChart" style="max-height:230px"></canvas></div>
+  </div>
+</div>
+
+<!-- PREVIAS PANEL -->
+<div class="panel" id="panel-previas">
+  <div class="section-label">Visitas Previas · <span id="prevViewLabel">—</span> · <span id="prevRangeLabel" style="color:var(--purple);font-weight:800">—</span></div>
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--purple)"></div><div class="kpi-label">Total Previas</div><div class="kpi-value" id="pv-total" style="color:var(--purple)">—</div><div class="kpi-sub">En el rango seleccionado</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-label">Ejecutadas</div><div class="kpi-value" id="pv-exec" style="color:var(--green)">—</div><div class="kpi-sub">Cierre Exitoso</div><span class="kpi-badge" id="pv-exec-badge"></span></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-label">Fallidas</div><div class="kpi-value" id="pv-fail" style="color:var(--red)">—</div><div class="kpi-sub">Cierre Fallido</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--amber)"></div><div class="kpi-label">Canceladas</div><div class="kpi-value" id="pv-cancel" style="color:var(--amber)">—</div><div class="kpi-sub">Cierre Cancelado</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--claude)"></div><div class="kpi-label">% Ejecución</div><div class="kpi-value" id="pv-pct" style="color:var(--claude)">—</div><div class="kpi-sub">Meta ≥ 80%</div><span class="kpi-badge" id="pv-meta-badge"></span></div>
+  </div>
+  <div class="section-label">Por tipo de visita previa</div>
+  <div class="type-grid" id="pvTypeGrid"></div>
+  <div class="charts-grid">
+    <div class="chart-card a-purple"><div class="chart-header"><div><div class="chart-title">Previas por período</div><div class="chart-sub" id="pvTrendSub">—</div></div><span class="cpill cpill-pur">Multi-tipo</span></div><canvas id="pvTrendChart"></canvas></div>
+    <div class="chart-card a-purple"><div class="chart-header"><div><div class="chart-title">Composición</div><div class="chart-sub">Distribución por tipo</div></div></div><canvas id="pvDonutChart"></canvas></div>
+  </div>
+  <div class="charts-row2">
+    <div class="chart-card a-purple"><div class="chart-header"><div><div class="chart-title">% Ejecución por tipo</div><div class="chart-sub">Ranking vs meta 80%</div></div></div><canvas id="pvBarChart"></canvas></div>
+    <div class="chart-card a-purple"><div class="chart-header"><div><div class="chart-title">Radar cobertura</div><div class="chart-sub">Tipos vs meta 80%</div></div></div><canvas id="pvRadarChart" style="max-height:220px"></canvas></div>
+  </div>
+  <div class="section-label">Detalle por tipo</div>
+  <div class="table-card"><table><thead><tr><th>Sigla</th><th>Descripción</th><th>Total</th><th>Exitoso</th><th>Fallido</th><th>Cancelado</th><th>% Ejec.</th><th style="min-width:100px">Progreso</th><th>Estado</th></tr></thead><tbody id="pvTable"></tbody></table></div>
+  <div class="bottom-grid">
+    <div class="chart-card a-purple"><div class="chart-header"><div><div class="chart-title">Previas por Operador</div><div class="chart-sub">% vs meta</div></div></div><div class="op-list" id="pvOpList"></div></div>
+    <div class="chart-card a-purple"><div class="chart-header"><div><div class="chart-title">Volumen por Operador</div><div class="chart-sub">Total vs ejecutadas</div></div></div><canvas id="pvOpChart"></canvas></div>
+  </div>
+</div>
+
+<!-- EJECUCION PANEL -->
+<div class="panel" id="panel-ejecucion">
+  <div class="section-label">Ejecución · <span id="ejViewLabel">—</span> · <span id="ejRangeLabel" style="color:var(--claude);font-weight:800">—</span></div>
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--claude)"></div><div class="kpi-label">Total Ejecución</div><div class="kpi-value" id="ej-total" style="color:var(--claude)">—</div><div class="kpi-sub">En el rango seleccionado</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--green)"></div><div class="kpi-label">Ejecutadas</div><div class="kpi-value" id="ej-exec" style="color:var(--green)">—</div><div class="kpi-sub">Cierre Exitoso</div><span class="kpi-badge" id="ej-exec-badge"></span></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--red)"></div><div class="kpi-label">Fallidas</div><div class="kpi-value" id="ej-fail" style="color:var(--red)">—</div><div class="kpi-sub">Cierre Fallido</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--amber)"></div><div class="kpi-label">Canceladas</div><div class="kpi-value" id="ej-cancel" style="color:var(--amber)">—</div><div class="kpi-sub">Cierre Cancelado</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--indigo)"></div><div class="kpi-label">% Ejecución</div><div class="kpi-value" id="ej-pct" style="color:var(--indigo)">—</div><div class="kpi-sub">Meta ≥ 80%</div><span class="kpi-badge" id="ej-meta-badge"></span></div>
+  </div>
+  <div class="section-label">Por tipo de ejecución</div>
+  <div class="type-grid" id="ejTypeGrid"></div>
+  <div class="charts-grid">
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">Ejecuciones por período</div><div class="chart-sub" id="ejTrendSub">—</div></div><span class="cpill cpill-cl">Multi-tipo</span></div><canvas id="ejTrendChart"></canvas></div>
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">Composición</div><div class="chart-sub">Distribución por tipo</div></div></div><canvas id="ejDonutChart"></canvas></div>
+  </div>
+  <div class="charts-row2">
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">% Ejecución por tipo</div><div class="chart-sub">Ranking vs meta 80%</div></div></div><canvas id="ejBarChart"></canvas></div>
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">Radar cobertura</div><div class="chart-sub">Tipos vs meta 80%</div></div></div><canvas id="ejRadarChart" style="max-height:220px"></canvas></div>
+  </div>
+  <div class="section-label">Detalle por tipo</div>
+  <div class="table-card"><table><thead><tr><th>Sigla</th><th>Descripción</th><th>Total</th><th>Exitoso</th><th>Fallido</th><th>Cancelado</th><th>% Ejec.</th><th style="min-width:100px">Progreso</th><th>Estado</th></tr></thead><tbody id="ejTable"></tbody></table></div>
+  <div class="bottom-grid">
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">Ejecución por Operador</div><div class="chart-sub">% vs meta</div></div></div><div class="op-list" id="ejOpList"></div></div>
+    <div class="chart-card a-claude"><div class="chart-header"><div><div class="chart-title">Volumen por Operador</div><div class="chart-sub">Total vs ejecutadas</div></div></div><canvas id="ejOpChart"></canvas></div>
+  </div>
+</div>
+
+<script>
+__DATA_JS__
+
+const PREVIAS_CAT=[
+  {sigla:'PREA',desc:'Previa Aumento de Carga'},
+  {sigla:'PREM',desc:'Previa Mantenimiento'},
+  {sigla:'VPNT',desc:'Visita Previa Cambio NT'},
+  {sigla:'PVIC',desc:'Previa Independización Cuentas'},
+  {sigla:'PREB',desc:'Previa BIA Monitor'},
+  {sigla:'PREC',desc:'Previa Bancos de Condensadores'}
+];
+const EJEC_CAT=[
+  {sigla:'AMCA',desc:'Ejecución Aumento de Carga'},
+  {sigla:'MANT',desc:'Ejecución Mantenimiento'},
+  {sigla:'ISNT',desc:'Instalación Cambio NT'},
+  {sigla:'BICH',desc:'Instalación BIA Monitor'},
+  {sigla:'COND',desc:'Instalación Banco de Condensadores'}
+];
+const PV_COLORS=['#7c3aed','#3730a3','#0891b2','#059669','#d97706','#e11d48'];
+const EJ_COLORS=['#D97757','#f59e0b','#10b981','#3b82f6','#8b5cf6'];
+
+let currentPeriod='diario', currentTab='ots';
+let charts={};
+const gc='rgba(203,213,225,.5)', tc='#94a3b8';
+const tt={backgroundColor:'#1e293b',titleColor:'#f1f5f9',bodyColor:'#94a3b8',borderColor:'#334155',borderWidth:1,padding:9,cornerRadius:7};
+
+// ── INIT FILTERS ──────────────────────────────────────────────────
+// Populate operators
+const allOps=[...new Set(ES_RAW_DATA.map(r=>r.or).filter(Boolean))].sort();
+const sel=document.getElementById('fOperador');
+allOps.forEach(op=>{const o=document.createElement('option');o.value=op;o.textContent=op;sel.appendChild(o);});
+
+// Default: current month
+function setDefaultDates(){
+  const now=new Date();
+  const y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('fStart').value=`${y}-${m}-01`;
+  document.getElementById('fEnd').value=`${y}-${m}-${String(now.getDate()).padStart(2,'0')}`;
+}
+function resetDates(){
+  // Show all data
+  const dates=ES_RAW_DATA.map(r=>r.fecha).sort();
+  document.getElementById('fStart').value=dates[0];
+  document.getElementById('fEnd').value=dates[dates.length-1];
+  render();
+}
+setDefaultDates();
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function scolor(p){return p>=80?'var(--green)':p>=60?'var(--amber)':'var(--red)';}
+function btag(p){return p>=80?['tag-ok','Cumple']:p>=60?['tag-warn','Riesgo']:['tag-bad','Crítico'];}
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function getFiltered(){
+  const op=document.getElementById('fOperador').value;
+  const s=document.getElementById('fStart').value;
+  const e=document.getElementById('fEnd').value;
+  return ES_RAW_DATA.filter(r=>{
+    if(op && r.or!==op) return false;
+    if(s && r.fecha<s) return false;
+    if(e && r.fecha>e) return false;
+    return true;
+  });
+}
+
+function getRangeLabel(){
+  const s=document.getElementById('fStart').value;
+  const e=document.getElementById('fEnd').value;
+  if(!s||!e) return 'Todos los datos';
+  const fmt=d=>new Date(d+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'});
+  return `${fmt(s)} → ${fmt(e)}`;
+}
+
+function updateRangeInfo(count){
+  document.getElementById('rangeInfo').textContent=`📅 ${getRangeLabel()} · ${count} OTs`;
+  ['otRangeLabel','prevRangeLabel','ejRangeLabel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=getRangeLabel();
+  });
+}
+
+// Agrupa por período DENTRO del rango filtrado
+function getBuckets(rows){
+  const b={};
+  rows.forEach(r=>{
+    let k;
+    if(currentPeriod==='diario'){
+      k=r.fecha; // YYYY-MM-DD
+    } else if(currentPeriod==='semanal'){
+      const d=new Date(r.fecha+'T12:00:00');
+      const tmp=new Date(d); tmp.setDate(tmp.getDate()+4-(tmp.getDay()||7));
+      const ys=new Date(tmp.getFullYear(),0,1);
+      const wk=Math.ceil((((tmp-ys)/86400000)+1)/7);
+      k=`${d.getFullYear()}-S${String(wk).padStart(2,'0')}`;
+    } else {
+      k=r.fecha.slice(0,7); // YYYY-MM
+    }
+    if(!b[k]) b[k]={label:k,total:0,exitoso:0};
+    b[k].total++; if(r.exitoso) b[k].exitoso++;
+  });
+  return Object.values(b).sort((a,c)=>a.label<c.label?-1:1);
+}
+
+function fmtLabel(raw){
+  if(currentPeriod==='diario'){
+    const d=new Date(raw+'T12:00:00');
+    return d.toLocaleDateString('es-CO',{day:'numeric',month:'short'});
+  }
+  if(currentPeriod==='semanal') return raw.replace('-S',' · S');
+  // mensual YYYY-MM
+  const [y,m]=raw.split('-');
+  return new Date(+y,+m-1,1).toLocaleDateString('es-CO',{month:'short',year:'2-digit'});
+}
+
+function groupBy(rows,field){
+  const g={};
+  rows.forEach(r=>{
+    const k=r[field]||'Sin dato';
+    if(!g[k]) g[k]={name:k,total:0,exitoso:0,fallido:0,cancelado:0};
+    g[k].total++;
+    const est=(r.estado||'').toLowerCase();
+    if(r.exitoso) g[k].exitoso++;
+    else if(est.includes('fallid')) g[k].fallido++;
+    else if(est.includes('cancel')) g[k].cancelado++;
+  });
+  return Object.values(g).map(x=>({...x,pct:x.total>0?Math.round(x.exitoso/x.total*100):0}));
+}
+
+function statsFor(rows){
+  const total=rows.length;
+  const exitoso=rows.filter(r=>r.exitoso).length;
+  const fallido=rows.filter(r=>(r.estado||'').toLowerCase().includes('fallid')).length;
+  const cancelado=rows.filter(r=>(r.estado||'').toLowerCase().includes('cancel')).length;
+  return{total,exitoso,fallido,cancelado,pct:total>0?Math.round(exitoso/total*100):0};
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────
+function buildBarLine(cid,buckets,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  const labels=buckets.map(b=>fmtLabel(b.label));
+  const pcts=buckets.map(b=>b.total>0?Math.round(b.exitoso/b.total*100):0);
+  charts[key]=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Total',data:buckets.map(b=>b.total),backgroundColor:'rgba(30,58,95,.12)',borderColor:'rgba(30,58,95,.35)',borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'Exitosas',data:buckets.map(b=>b.exitoso),backgroundColor:'rgba(5,150,105,.22)',borderColor:'rgba(5,150,105,.6)',borderWidth:1,borderRadius:4,yAxisID:'y'},
+    {label:'% Ejec.',data:pcts,type:'line',borderColor:'#D97757',borderWidth:2.5,pointBackgroundColor:'#D97757',pointRadius:4,tension:.4,yAxisID:'y2',fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:true,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:tt},
+    scales:{y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},
+      y2:{position:'right',min:0,max:100,grid:{display:false},ticks:{color:'#D97757',font:{size:10},callback:v=>v+'%'}},
+      x:{grid:{color:gc},ticks:{color:tc,font:{size:9},maxRotation:45}}}}});
+  const avg=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
+  return avg;
+}
+
+function buildDonut(cid,st,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  charts[key]=new Chart(ctx,{type:'doughnut',
+    data:{labels:['Exitoso','Fallido','Cancelado'],
+      datasets:[{data:[st.exitoso,st.fallido,st.cancelado],
+        backgroundColor:['rgba(5,150,105,.75)','rgba(225,29,72,.75)','rgba(217,119,87,.75)'],
+        borderColor:['#059669','#e11d48','#D97757'],borderWidth:2,hoverOffset:5}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'65%',
+      plugins:{legend:{position:'bottom',labels:{color:tc,font:{size:10},padding:10,boxWidth:10}},tooltip:tt}}});
+}
+
+function buildHBar(cid,items,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  const s=[...items].sort((a,b)=>b.pct-a.pct).slice(0,10);
+  charts[key]=new Chart(ctx,{type:'bar',data:{labels:s.map(x=>x.name),datasets:[
+    {label:'% Ejecución',data:s.map(x=>x.pct),
+      backgroundColor:s.map(x=>x.pct>=80?'rgba(5,150,105,.7)':x.pct>=60?'rgba(217,119,87,.7)':'rgba(225,29,72,.7)'),
+      borderWidth:0,borderRadius:4},
+    {label:'Meta 80%',data:Array(s.length).fill(80),type:'line',borderColor:'rgba(217,119,87,.6)',borderDash:[4,4],borderWidth:2,pointRadius:0,fill:false}
+  ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:{...tt,callbacks:{label:c=>` ${c.parsed.x}%`}}},
+    scales:{x:{min:0,max:100,grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:tc,font:{size:10}}}}}});
+}
+
+function buildTrend(cid,buckets,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  const pcts=buckets.map(b=>b.total>0?Math.round(b.exitoso/b.total*100):0);
+  const gr=ctx.createLinearGradient(0,0,0,160);
+  gr.addColorStop(0,'rgba(30,58,95,.2)');gr.addColorStop(1,'rgba(30,58,95,0)');
+  charts[key]=new Chart(ctx,{type:'line',data:{labels:buckets.map(b=>fmtLabel(b.label)),datasets:[
+    {label:'% Ejecución',data:pcts,borderColor:'#1e3a5f',borderWidth:2.5,pointBackgroundColor:'#1e3a5f',pointRadius:3,tension:.4,fill:true,backgroundColor:gr},
+    {label:'Meta 80%',data:Array(pcts.length).fill(80),borderColor:'rgba(217,119,87,.6)',borderDash:[5,4],borderWidth:2,pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:{...tt,callbacks:{label:c=>` ${c.parsed.y}%`}}},
+    scales:{y:{min:0,max:100,grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'}},x:{grid:{color:gc},ticks:{color:tc,font:{size:9},maxRotation:45}}}}});
+}
+
+function buildOpBar(cid,opData,accentClr,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  const t8=[...opData].sort((a,b)=>b.total-a.total).slice(0,8);
+  charts[key]=new Chart(ctx,{type:'bar',data:{labels:t8.map(o=>o.name.split(' ').slice(-1)[0]),datasets:[
+    {label:'Total',data:t8.map(o=>o.total),backgroundColor:accentClr+'20',borderColor:accentClr+'80',borderWidth:1,borderRadius:3,stack:'s'},
+    {label:'Exitosas',data:t8.map(o=>o.exitoso),backgroundColor:'rgba(5,150,105,.3)',borderColor:'rgba(5,150,105,.6)',borderWidth:1,borderRadius:3,stack:'s2'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:tt},
+    scales:{y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},x:{grid:{display:false},ticks:{color:tc,font:{size:9}}}}}});
+}
+
+function buildRadar(cid,items,bClr,bgClr,key){
+  dc(key); if(items.length<3) return;
+  const ctx=document.getElementById(cid).getContext('2d');
+  charts[key]=new Chart(ctx,{type:'radar',data:{labels:items.map(p=>p.name),datasets:[
+    {label:'% Ejec.',data:items.map(p=>p.pct),borderColor:bClr,backgroundColor:bgClr,pointBackgroundColor:bClr,borderWidth:2,pointRadius:3},
+    {label:'Meta 80%',data:Array(items.length).fill(80),borderColor:'rgba(217,119,87,.5)',backgroundColor:'rgba(217,119,87,.05)',borderDash:[4,4],borderWidth:1.5,pointRadius:0}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:tt},
+    scales:{r:{min:0,max:100,grid:{color:gc},angleLines:{color:gc},pointLabels:{color:tc,font:{size:10}},ticks:{color:tc,font:{size:9},backdropColor:'transparent',callback:v=>v+'%'}}}}});
+}
+
+function buildMultiLine(cid,catalog,rows,colors,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  const buckets=getBuckets(rows);
+  const labels=buckets.map(b=>fmtLabel(b.label));
+  const datasets=catalog.map((cat,i)=>{
+    const sr=rows.filter(r=>r.tipo===cat.sigla);
+    const data=buckets.map(b=>{
+      const br=sr.filter(r=>{
+        if(currentPeriod==='diario') return r.fecha===b.label;
+        if(currentPeriod==='semanal'){
+          const d=new Date(r.fecha+'T12:00:00');
+          const tmp=new Date(d);tmp.setDate(tmp.getDate()+4-(tmp.getDay()||7));
+          const ys=new Date(tmp.getFullYear(),0,1);
+          const wk=Math.ceil((((tmp-ys)/86400000)+1)/7);
+          return `${d.getFullYear()}-S${String(wk).padStart(2,'0')}`===b.label;
+        }
+        return r.fecha.slice(0,7)===b.label;
+      });
+      return br.filter(r=>r.exitoso).length;
+    });
+    return{label:cat.sigla,data,borderColor:colors[i],borderWidth:2,pointBackgroundColor:colors[i],pointRadius:3,tension:.4,fill:false};
+  });
+  charts[key]=new Chart(ctx,{type:'line',data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:tt},
+      scales:{y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},x:{grid:{color:gc},ticks:{color:tc,font:{size:9},maxRotation:45}}}}});
+}
+
+function buildTypeDonut(cid,catalog,rows,colors,key){
+  dc(key);
+  const ctx=document.getElementById(cid).getContext('2d');
+  const vals=catalog.map(c=>rows.filter(r=>r.tipo===c.sigla).length);
+  charts[key]=new Chart(ctx,{type:'doughnut',data:{labels:catalog.map(c=>c.sigla),datasets:[{data:vals,
+    backgroundColor:colors.map(c=>c+'bb'),borderColor:colors,borderWidth:2,hoverOffset:5}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'58%',
+      plugins:{legend:{position:'right',labels:{color:tc,font:{size:10},padding:7,boxWidth:10}},tooltip:tt}}});
+}
+
+// ── TABLES & CARDS ────────────────────────────────────────────────
+function buildSvcTable(tbodyId,items){
+  const tb=document.getElementById(tbodyId);tb.innerHTML='';
+  if(!items.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--slate-400);padding:20px">Sin datos en el rango seleccionado</td></tr>';return;}
+  [...items].sort((a,b)=>b.pct-a.pct).forEach(s=>{
+    const clr=scolor(s.pct);const[tag,lbl]=btag(s.pct);
+    tb.innerHTML+=`<tr><td class="svc-name">${s.name}</td><td>${s.total}</td>
+      <td style="color:var(--green);font-weight:600">${s.exitoso}</td>
+      <td style="color:var(--red)">${s.fallido}</td>
+      <td style="color:var(--amber)">${s.cancelado}</td>
+      <td><span style="font-weight:700;color:${clr}">${s.pct}%</span></td>
+      <td><div class="progress-track"><div class="progress-fill" style="width:${s.pct}%;background:${clr}"></div></div></td>
+      <td><span class="tag ${tag}">${lbl}</span></td></tr>`;
+  });
+}
+
+function buildTypedTable(tbodyId,catalog,rows,colors){
+  const tb=document.getElementById(tbodyId);tb.innerHTML='';
+  catalog.forEach((cat,i)=>{
+    const cr=rows.filter(r=>r.tipo===cat.sigla);
+    const st=statsFor(cr);const clr=scolor(st.pct);const[tag,lbl]=btag(st.pct);const col=colors[i];
+    tb.innerHTML+=`<tr>
+      <td><span class="sigla-chip" style="background:${col}18;color:${col};border:1px solid ${col}44">${cat.sigla}</span></td>
+      <td class="svc-name">${cat.desc}</td><td>${st.total}</td>
+      <td style="color:var(--green);font-weight:600">${st.exitoso}</td>
+      <td style="color:var(--red)">${st.fallido}</td>
+      <td style="color:var(--amber)">${st.cancelado}</td>
+      <td><span style="font-weight:700;color:${clr}">${st.pct}%</span></td>
+      <td><div class="progress-track"><div class="progress-fill" style="width:${st.pct}%;background:${clr}"></div></div></td>
+      <td><span class="tag ${tag}">${lbl}</span></td></tr>`;
+  });
+}
+
+function buildTypeCards(gridId,catalog,rows,colors){
+  const g=document.getElementById(gridId);g.innerHTML='';
+  catalog.forEach((cat,i)=>{
+    const cr=rows.filter(r=>r.tipo===cat.sigla);
+    const st=statsFor(cr);const clr=scolor(st.pct);const col=colors[i];
+    g.innerHTML+=`<div class="type-card" style="border-top:3px solid ${col}">
+      <div class="tc-top"><span class="tc-sigla" style="color:${col}">${cat.sigla}</span>
+        <span class="tc-badge" style="background:${col}18;color:${col}">${st.pct>=80?'✓ Cumple':st.pct>=60?'⚠ Riesgo':'✗ Crítico'}</span></div>
+      <div class="tc-desc">${cat.desc}</div>
+      <div class="tc-nums">
+        <div><div style="font-size:8px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.8px;margin-bottom:1px">Total OTs</div>
+          <div class="tc-total">${st.total}</div></div>
+        <div class="tc-pct-wrap"><div class="tc-pct" style="color:${clr}">${st.pct}%</div><div class="tc-pct-lbl">Ejecución</div></div>
+      </div>
+      <div class="tc-bar"><div class="tc-fill" style="width:${st.pct}%;background:${clr}"></div></div>
+    </div>`;
+  });
+}
+
+function buildOpList(listId,opData){
+  const el=document.getElementById(listId);el.innerHTML='';
+  [...opData].sort((a,b)=>b.pct-a.pct).slice(0,12).forEach(op=>{
+    const clr=scolor(op.pct);
+    el.innerHTML+=`<div class="op-item"><span class="op-name">${op.name}</span>
+      <div class="op-meta"><div class="mini-bar"><div class="mini-fill" style="width:${op.pct}%;background:${clr}"></div></div>
+      <span class="op-pct" style="color:${clr}">${op.pct}%</span></div></div>`;
+  });
+}
+
+// ── KPI ───────────────────────────────────────────────────────────
+const vLbl={diario:'Vista Diaria',semanal:'Vista Semanal',mensual:'Vista Mensual'};
+
+function setKPIs(ids,st){
+  document.getElementById(ids.total).textContent=st.total.toLocaleString();
+  document.getElementById(ids.exec).textContent=st.exitoso.toLocaleString();
+  document.getElementById(ids.fail).textContent=st.fallido.toLocaleString();
+  document.getElementById(ids.cancel).textContent=st.cancelado.toLocaleString();
+  document.getElementById(ids.pct).textContent=st.pct+'%';
+  const eb=document.getElementById(ids.execBadge);
+  eb.textContent=st.pct+'% ejec.';eb.className='kpi-badge '+(st.pct>=80?'badge-green':'badge-red');
+  const mb=document.getElementById(ids.metaBadge);
+  mb.textContent=st.pct>=80?'✓ Meta cumplida':'✗ Bajo meta';
+  mb.className='kpi-badge '+(st.pct>=80?'badge-green':'badge-red');
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+function render(){
+  const rows=getFiltered();
+  updateRangeInfo(rows.length);
+
+  if(currentTab==='ots'){
+    document.getElementById('otViewLabel').textContent=vLbl[currentPeriod];
+    const st=statsFor(rows);
+    setKPIs({total:'ot-total',exec:'ot-exec',fail:'ot-fail',cancel:'ot-cancel',pct:'ot-pct',execBadge:'ot-exec-badge',metaBadge:'ot-meta-badge'},st);
+    const buckets=getBuckets(rows);
+    document.getElementById('otExecSub').textContent=`${buckets.length} períodos · ${rows.length} OTs`;
+    const avg=buildBarLine('otExecChart',buckets,'otExec');
+    const pill=document.getElementById('otExecPill');
+    if(avg>=80){pill.className='cpill cpill-ok';pill.textContent=`Prom: ${avg}% ✓`;}
+    else if(avg>=60){pill.className='cpill cpill-warn';pill.textContent=`Prom: ${avg}% ⚠`;}
+    else{pill.className='cpill cpill-bad';pill.textContent=`Prom: ${avg}% ✗`;}
+    buildDonut('otDonutChart',st,'otDonut');
+    buildTrend('otTrendChart',buckets,'otTrend');
+    const bySvc=groupBy(rows,'tipo');
+    buildHBar('otSvcChart',bySvc,'otSvc');
+    buildSvcTable('otSvcTable',bySvc);
+    const byOp=groupBy(rows,'or');
+    buildOpBar('otOpChart',byOp,'#1e3a5f','otOp');
+    buildOpList('otOpList',byOp);
+    buildRadar('otRadarChart',bySvc,'rgba(30,58,95,.8)','rgba(30,58,95,.1)','otRadar');
+
+  } else if(currentTab==='previas'){
+    document.getElementById('prevViewLabel').textContent=vLbl[currentPeriod];
+    const pvRows=rows.filter(r=>PREVIAS_CAT.some(p=>p.sigla===r.tipo));
+    const st=statsFor(pvRows);
+    document.getElementById('pvTrendSub').textContent=`${pvRows.length} previas en el rango`;
+    setKPIs({total:'pv-total',exec:'pv-exec',fail:'pv-fail',cancel:'pv-cancel',pct:'pv-pct',execBadge:'pv-exec-badge',metaBadge:'pv-meta-badge'},st);
+    buildTypeCards('pvTypeGrid',PREVIAS_CAT,pvRows,PV_COLORS);
+    buildTypedTable('pvTable',PREVIAS_CAT,pvRows,PV_COLORS);
+    buildMultiLine('pvTrendChart',PREVIAS_CAT,pvRows,PV_COLORS,'pvTrend');
+    buildTypeDonut('pvDonutChart',PREVIAS_CAT,pvRows,PV_COLORS,'pvDonut');
+    const pvItems=PREVIAS_CAT.map(cat=>{const cr=pvRows.filter(r=>r.tipo===cat.sigla);const st=statsFor(cr);return{name:cat.sigla,...st};});
+    buildHBar('pvBarChart',pvItems,'pvBar');
+    buildRadar('pvRadarChart',pvItems,'rgba(124,58,237,.8)','rgba(124,58,237,.1)','pvRadar');
+    buildOpList('pvOpList',groupBy(pvRows,'or'));
+    buildOpBar('pvOpChart',groupBy(pvRows,'or'),'#7c3aed','pvOp');
+
+  } else {
+    document.getElementById('ejViewLabel').textContent=vLbl[currentPeriod];
+    const ejRows=rows.filter(r=>EJEC_CAT.some(p=>p.sigla===r.tipo));
+    const st=statsFor(ejRows);
+    document.getElementById('ejTrendSub').textContent=`${ejRows.length} ejecuciones en el rango`;
+    setKPIs({total:'ej-total',exec:'ej-exec',fail:'ej-fail',cancel:'ej-cancel',pct:'ej-pct',execBadge:'ej-exec-badge',metaBadge:'ej-meta-badge'},st);
+    buildTypeCards('ejTypeGrid',EJEC_CAT,ejRows,EJ_COLORS);
+    buildTypedTable('ejTable',EJEC_CAT,ejRows,EJ_COLORS);
+    buildMultiLine('ejTrendChart',EJEC_CAT,ejRows,EJ_COLORS,'ejTrend');
+    buildTypeDonut('ejDonutChart',EJEC_CAT,ejRows,EJ_COLORS,'ejDonut');
+    const ejItems=EJEC_CAT.map(cat=>{const cr=ejRows.filter(r=>r.tipo===cat.sigla);const st=statsFor(cr);return{name:cat.sigla,...st};});
+    buildHBar('ejBarChart',ejItems,'ejBar');
+    buildRadar('ejRadarChart',ejItems,'rgba(217,119,87,.8)','rgba(217,119,87,.1)','ejRadar');
+    buildOpList('ejOpList',groupBy(ejRows,'or'));
+    buildOpBar('ejOpChart',groupBy(ejRows,'or'),'#D97757','ejOp');
+  }
+}
+
+function setPeriod(v){
+  currentPeriod=v;
+  document.querySelectorAll('.period-btn').forEach((b,i)=>b.classList.toggle('active',['diario','semanal','mensual'][i]===v));
+  render();
+}
+function setTab(t){
+  currentTab=t;
+  document.querySelectorAll('.main-tab').forEach((b,i)=>b.classList.toggle('active',['ots','previas','ejecucion'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  render();
+}
+function applyFilters(){render();}
+
+render();
+</script>
+</body>
+</html>
