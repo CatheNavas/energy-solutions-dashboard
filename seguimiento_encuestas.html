@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento Encuestas · Energy Solutions</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+:root{
+  --navy:#1e3a5f;--navy-dark:#0f2240;--indigo:#3730a3;
+  --claude:#D97757;--slate-bg:#f1f5f9;--slate-100:#e2e8f0;--slate-200:#cbd5e1;
+  --slate-400:#94a3b8;--slate-600:#475569;--slate-800:#1e293b;
+  --white:#ffffff;--green:#059669;--green-lt:#d1fae5;
+  --red:#e11d48;--red-lt:#ffe4e6;--amber:#d97706;--amber-lt:#fef3c7;
+  --purple:#7c3aed;--purple-lt:#ede9fe;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--slate-bg);color:var(--slate-800);font-family:'Inter',sans-serif;min-height:100vh;}
+
+header{background:linear-gradient(135deg,var(--navy-dark),var(--navy) 50%,var(--indigo));padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow-lg);}
+.logo-area{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:var(--claude);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-text h1{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;color:#fff;}
+.logo-text p{font-size:10px;color:rgba(255,255,255,.5);}
+.header-right{display:flex;gap:6px;align-items:center;}
+.last-upd{font-size:10px;color:rgba(255,255,255,.5);padding:4px 10px;background:rgba(255,255,255,.08);border-radius:5px;border:1px solid rgba(255,255,255,.12);}
+.pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;margin-right:4px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* TABS */
+.main-tabs{display:flex;background:var(--white);border-bottom:1px solid var(--slate-200);padding:0 28px;box-shadow:var(--shadow-sm);}
+.main-tab{padding:13px 20px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:12px;color:var(--slate-400);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:all .15s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.main-tab:hover:not(.active){color:var(--slate-600);}
+.main-tab.active{color:var(--navy);border-bottom-color:var(--claude);}
+.tab-chip{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;}
+
+/* FILTERS */
+.filters-bar{padding:10px 28px;background:var(--white);border-bottom:1px solid var(--slate-100);display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.filter-label{font-size:10px;color:var(--slate-400);font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
+select,input[type=date],input[type=text]{background:var(--slate-bg);border:1px solid var(--slate-200);color:var(--slate-800);padding:6px 10px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;outline:none;transition:border-color .15s;}
+select:focus,input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.1);}
+
+/* PANELS */
+.panel{display:none;padding:20px 28px;}
+.panel.active{display:block;}
+
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .15s;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+.kpi-accent{position:absolute;top:0;left:0;width:4px;height:100%;}
+.kpi-label{font-size:9px;color:var(--slate-400);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.kpi-value{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:26px;line-height:1;margin-bottom:3px;letter-spacing:-1px;}
+.kpi-sub{font-size:10px;color:var(--slate-400);}
+.kpi-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;margin-top:4px;}
+.badge-green{background:var(--green-lt);color:var(--green);}
+.badge-red{background:var(--red-lt);color:var(--red);}
+.badge-amber{background:var(--amber-lt);color:var(--amber);}
+
+.section-label{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--slate-400);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--slate-100);}
+
+.charts-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.chart-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:18px;box-shadow:var(--shadow-sm);}
+.chart-card.a-navy{border-top:3px solid var(--navy);}
+.chart-card.a-claude{border-top:3px solid var(--claude);}
+.chart-card.a-green{border-top:3px solid var(--green);}
+.chart-card.a-red{border-top:3px solid var(--red);}
+.chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.chart-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:12px;color:var(--slate-800);}
+.chart-sub{font-size:10px;color:var(--slate-400);margin-top:2px;}
+canvas{max-height:200px;}
+
+/* TRACKING TABLE */
+.table-card{background:var(--white);border:1px solid var(--slate-100);border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:var(--shadow-sm);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-family:'Plus Jakarta Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--slate-400);padding:9px 11px;text-align:left;border-bottom:2px solid var(--slate-100);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--slate-100);transition:background .1s;}
+tbody tr:hover{background:var(--slate-bg);}
+tbody td{padding:10px 11px;font-size:11px;vertical-align:middle;}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:9px;font-weight:700;}
+.tag-green{background:var(--green-lt);color:var(--green);}
+.tag-amber{background:var(--amber-lt);color:var(--amber);}
+.tag-red{background:var(--red-lt);color:var(--red);}
+.tag-navy{background:rgba(30,58,95,.1);color:var(--navy);}
+
+/* BUTTONS */
+.btn-reenviar{padding:4px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.btn-reenviar:hover{opacity:.8;}
+.btn-link{padding:4px 12px;background:rgba(30,58,95,.1);color:var(--navy);border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none;display:inline-block;}
+.btn-link:hover{background:var(--navy);color:#fff;}
+
+/* DIAS BADGE */
+.dias-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;}
+
+/* RESPONDIO TOGGLE */
+.toggle-wrap{display:flex;align-items:center;gap:8px;}
+.toggle{width:36px;height:20px;background:var(--slate-200);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;}
+.toggle.on{background:var(--green);}
+.toggle::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle.on::after{left:18px;}
+
+/* SEARCH */
+.search-input{min-width:200px;}
+
+/* PROGRESS RING */
+.progress-ring-wrap{text-align:center;padding:10px 0;}
+.progress-ring-val{font-family:'Plus Jakarta Sans',sans-serif;font-weight:900;font-size:36px;}
+.progress-ring-lbl{font-size:11px;color:var(--slate-400);}
+
+/* NETLIFY INSTRUCTIONS */
+.netlify-box{background:rgba(30,58,95,.04);border:1px solid rgba(30,58,95,.15);border-radius:10px;padding:16px 20px;margin-bottom:18px;}
+.netlify-box h3{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;color:var(--navy);margin-bottom:10px;}
+.netlify-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:12px;color:var(--slate-600);}
+.step-num{width:20px;height:20px;background:var(--navy);color:#fff;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--slate-100);}
+::-webkit-scrollbar-thumb{background:var(--slate-200);border-radius:2px;}
+@media(max-width:1200px){.kpi-strip{grid-template-columns:repeat(3,1fr);}.charts-row2{grid-template-columns:1fr;}}
+@media(max-width:700px){.panel{padding:12px;}.kpi-strip{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-icon">📋</div>
+    <div class="logo-text">
+      <h1>Seguimiento de Encuestas</h1>
+      <p>Energy Solutions · Control de respuestas</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="last-upd"><span class="pulse"></span>Enviadas: <span id="fechaEnvio"></span></div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="main-tabs">
+  <button class="main-tab active" onclick="setTab('seguimiento')">
+    📊 Seguimiento
+    <span class="tab-chip" style="background:rgba(30,58,95,.1);color:var(--navy)" id="chipTotal">31 enviadas</span>
+  </button>
+  <button class="main-tab" onclick="setTab('pendientes')">
+    ⏳ Pendientes
+    <span class="tab-chip" style="background:var(--red-lt);color:var(--red)" id="chipPend">—</span>
+  </button>
+  <button class="main-tab" onclick="setTab('respondidas')">
+    ✅ Respondidas
+    <span class="tab-chip" style="background:var(--green-lt);color:var(--green)" id="chipResp">—</span>
+  </button>
+  <button class="main-tab" onclick="setTab('netlify')">
+    🔗 Cómo ver respuestas
+  </button>
+</div>
+
+<!-- FILTERS -->
+<div class="filters-bar">
+  <span class="filter-label">Buscar:</span>
+  <input type="text" class="search-input" id="searchInput" placeholder="Nombre o correo..." oninput="renderTables()"/>
+  <span class="filter-label">Días sin responder:</span>
+  <select id="fDias" onchange="renderTables()">
+    <option value="0">Todos</option>
+    <option value="3">+3 días</option>
+    <option value="7">+7 días</option>
+    <option value="14">+14 días</option>
+  </select>
+  <span class="filter-label">Servicio:</span>
+  <select id="fServicio" onchange="renderTables()">
+    <option value="">Todos</option>
+    <option>Banco Condensadores</option>
+    <option>BIA Monitor</option>
+    <option>Mantenimiento</option>
+    <option>Aumento de Carga</option>
+    <option>Calidad Energía</option>
+  </select>
+</div>
+
+<!-- ═══ PANEL SEGUIMIENTO ════════════════════════════════════ -->
+<div class="panel active" id="panel-seguimiento">
+  <div class="section-label">Resumen general · <span id="envioDate"></span></div>
+  <div class="kpi-strip">
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--navy)"></div>
+      <div class="kpi-label">Total Enviadas</div>
+      <div class="kpi-value" style="color:var(--navy)" id="kpi-enviadas">31</div>
+      <div class="kpi-sub">Correos enviados</div>
+    </div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--green)"></div>
+      <div class="kpi-label">Respondidas</div>
+      <div class="kpi-value" style="color:var(--green)" id="kpi-respondidas">0</div>
+      <div class="kpi-sub">Han completado la encuesta</div>
+      <span class="kpi-badge badge-green" id="kpi-resp-pct">0%</span>
+    </div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--red)"></div>
+      <div class="kpi-label">Pendientes</div>
+      <div class="kpi-value" style="color:var(--red)" id="kpi-pendientes">31</div>
+      <div class="kpi-sub">Sin responder</div>
+      <span class="kpi-badge badge-red" id="kpi-pend-pct">100%</span>
+    </div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--amber)"></div>
+      <div class="kpi-label">Días transcurridos</div>
+      <div class="kpi-value" style="color:var(--amber)" id="kpi-dias">0</div>
+      <div class="kpi-sub">Desde el envío</div>
+    </div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:var(--claude)"></div>
+      <div class="kpi-label">Tasa de respuesta</div>
+      <div class="kpi-value" style="color:var(--claude)" id="kpi-tasa">0%</div>
+      <div class="kpi-sub">Meta: ≥ 60%</div>
+      <span class="kpi-badge" id="kpi-tasa-badge">Iniciando</span>
+    </div>
+  </div>
+
+  <div class="charts-row2">
+    <div class="chart-card a-navy">
+      <div class="chart-header"><div><div class="chart-title">Estado de respuestas</div><div class="chart-sub">Respondidas vs pendientes</div></div></div>
+      <canvas id="estadoDonut"></canvas>
+    </div>
+    <div class="chart-card a-claude">
+      <div class="chart-header"><div><div class="chart-title">Fronteras por cliente</div><div class="chart-sub">Distribución de instalaciones</div></div></div>
+      <canvas id="fronterasBar"></canvas>
+    </div>
+  </div>
+
+  <!-- FULL TABLE -->
+  <div class="section-label">Todos los clientes · Estado de respuesta</div>
+  <div class="table-card">
+    <table>
+      <thead><tr>
+        <th>Cliente</th><th>Correo</th><th>Instalaciones</th><th>Servicios</th>
+        <th>Fecha Envío</th><th>Días sin resp.</th><th>Estado</th><th>¿Respondió?</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="allTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ PANEL PENDIENTES ════════════════════════════════════ -->
+<div class="panel" id="panel-pendientes">
+  <div class="section-label">Clientes pendientes de respuesta</div>
+  <div class="table-card">
+    <table>
+      <thead><tr>
+        <th>Cliente</th><th>Correo</th><th>Instalaciones</th><th>Servicios</th>
+        <th>Días sin responder</th><th>Urgencia</th><th>Reenviar</th><th>Link encuesta</th>
+      </tr></thead>
+      <tbody id="pendTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ PANEL RESPONDIDAS ════════════════════════════════════ -->
+<div class="panel" id="panel-respondidas">
+  <div class="section-label">Clientes que ya respondieron</div>
+  <div class="table-card">
+    <table>
+      <thead><tr>
+        <th>Cliente</th><th>Correo</th><th>Instalaciones</th><th>Servicios</th>
+        <th>Fecha respuesta</th><th>Estado</th>
+      </tr></thead>
+      <tbody id="respTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ PANEL NETLIFY ════════════════════════════════════════ -->
+<div class="panel" id="panel-netlify">
+  <div class="section-label">Cómo ver las respuestas en Netlify</div>
+
+  <div class="netlify-box">
+    <h3>📥 Ver respuestas recibidas en Netlify Forms</h3>
+    <div class="netlify-step"><div class="step-num">1</div><span>Ve a <strong>app.netlify.com</strong> e inicia sesión</span></div>
+    <div class="netlify-step"><div class="step-num">2</div><span>Entra a tu proyecto <strong>ejecucionoperativaes</strong></span></div>
+    <div class="netlify-step"><div class="step-num">3</div><span>En el menú izquierdo clic en <strong>"Forms"</strong></span></div>
+    <div class="netlify-step"><div class="step-num">4</div><span>Verás el formulario <strong>"encuesta-satisfaccion"</strong> con todas las respuestas</span></div>
+    <div class="netlify-step"><div class="step-num">5</div><span>Puedes descargar todas las respuestas en <strong>CSV</strong> desde ahí</span></div>
+  </div>
+
+  <div class="netlify-box">
+    <h3>📤 Subir el formulario a Netlify</h3>
+    <div class="netlify-step"><div class="step-num">1</div><span>Renombra el archivo <strong>encuesta.html</strong> que descargaste</span></div>
+    <div class="netlify-step"><div class="step-num">2</div><span>Súbelo a tu repo de GitHub <strong>energy-solutions-dashboard</strong></span></div>
+    <div class="netlify-step"><div class="step-num">3</div><span>Netlify lo publica automáticamente en <strong>ejecucionoperativaes.netlify.app/encuesta</strong></span></div>
+    <div class="netlify-step"><div class="step-num">4</div><span>Netlify detecta el atributo <strong>data-netlify="true"</strong> y guarda las respuestas</span></div>
+  </div>
+
+  <div class="netlify-box">
+    <h3>🔗 Links útiles</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+      <a href="https://app.netlify.com" target="_blank" class="btn-link" style="width:fit-content">→ Netlify Dashboard</a>
+      <a href="https://ejecucionoperativaes.netlify.app/encuesta" target="_blank" class="btn-link" style="width:fit-content">→ Ver formulario de encuesta</a>
+      <a href="https://ejecucionoperativaes.netlify.app/dashboard_satisfaccion" target="_blank" class="btn-link" style="width:fit-content">→ Ver dashboard de resultados</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const CLIENTES_ENVIADOS = [{"nombre":"AGROPECUARIA EL CALLEJON SAS - Palmira (Dicel)","correo":"oficinaelcallejon2022@gmail.com","fronteras":2,"servicios":"Bancos, Mantenimiento bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20AGROPECUARIA%20EL%20CALLEJON%20SAS%20-%20Palmira%20%28Dicel%29&empresa=AGROPECUARIA%20EL%20CALLEJON%20SAS%20-%20Palmira%20%28Dicel%29"},{"nombre":"ALIMENTARIA ROOSVELT CTA1 CLO","correo":"grupocrispi@hotmail.com","fronteras":1,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20ALIMENTARIA%20ROOSVELT%20CTA1%20CLO&empresa=ALIMENTARIA%20ROOSVELT%20CTA1%20CLO"},{"nombre":"ALVARO JOSE PAREDES GOMEZ - Popayan - CUENTA 2 (Dicel)","correo":"pasabocasdelcauca@hotmail.com","fronteras":1,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20ALVARO%20JOSE%20PAREDES%20GOMEZ%20-%20Popayan%20-%20CUENTA%202%20%28Dicel%29&empresa=ALVARO%20JOSE%20PAREDES%20GOMEZ%20-%20Popayan%20-%20CUENTA%202%20%28Dicel%29"},{"nombre":"Alinnova","correo":"dtorres@alinnova.com","fronteras":3,"servicios":"Bancos, Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Alinnova&empresa=Alinnova"},{"nombre":"Aqualia","correo":"freddy.duran@aqualia.com","fronteras":11,"servicios":"Nivel de tension 2","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Aqualia&empresa=Aqualia"},{"nombre":"Archies Calle 139","correo":"jgomezg@alsea.com.co","fronteras":16,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Archies%20Calle%20139&empresa=Archies%20Calle%20139"},{"nombre":"Arcillas la futuro","correo":"joseline.munoz@aqualia.com","fronteras":1,"servicios":"Mantenimiento bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Arcillas%20la%20futuro&empresa=Arcillas%20la%20futuro"},{"nombre":"BACU2 CL 129 BOG","correo":"facturacion@baco.com.co","fronteras":1,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20BACU2%20CL%20129%20BOG&empresa=BACU2%20CL%20129%20BOG"},{"nombre":"BOMBA FOODS","correo":"MMONTERO@SRWOK.COM","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20BOMBA%20FOODS&empresa=BOMBA%20FOODS"},{"nombre":"BYCSA","correo":"mantenimientomed@bycsa.co","fronteras":2,"servicios":"Biamonitors, Calidad de energia","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20BYCSA&empresa=BYCSA"},{"nombre":"Bellatrix","correo":"zgomez@subscolombia.com","fronteras":2,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Bellatrix&empresa=Bellatrix"},{"nombre":"Botellas Pet","correo":"PORLANDO@rpmcolombia.co","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Botellas%20Pet&empresa=Botellas%20Pet"},{"nombre":"Buffalo Wings","correo":"jpenagescont@gmail.com","fronteras":10,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Buffalo%20Wings&empresa=Buffalo%20Wings"},{"nombre":"COLEGIO MONTESORI","correo":"infraestructura@montessoricartagena.edu.co","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20COLEGIO%20MONTESORI&empresa=COLEGIO%20MONTESORI"},{"nombre":"COLOR PLASTIC","correo":"palito868@hotmail.com","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20COLOR%20PLASTIC&empresa=COLOR%20PLASTIC"},{"nombre":"Camino Palmero","correo":"oscarlop200@hotmail.com","fronteras":1,"servicios":"Nivel de tension 2","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Camino%20Palmero&empresa=Camino%20Palmero"},{"nombre":"DLK","correo":"cpsanfelipe@dlksa.net","fronteras":9,"servicios":"Aumento de carga, Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20DLK&empresa=DLK"},{"nombre":"GENPLAST","correo":"genplast.co@gmail.com","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20GENPLAST&empresa=GENPLAST"},{"nombre":"GERFOR","correo":"duvan.montealegre@gerfor.com","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20GERFOR&empresa=GERFOR"},{"nombre":"Home","correo":"mantenimiento@homeburgers.com","fronteras":19,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Home&empresa=Home"},{"nombre":"IRCC","correo":"mapuerto@alimentosalconsumidor.com","fronteras":100,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20IRCC&empresa=IRCC"},{"nombre":"Insurgentes","correo":"andres@insurgentestacobar.com","fronteras":2,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Insurgentes&empresa=Insurgentes"},{"nombre":"MEDIPORT S.A.S","correo":"soportetecnico@mediport.com.co","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20MEDIPORT%20S.A.S&empresa=MEDIPORT%20S.A.S"},{"nombre":"Muncher","correo":"gretel.diaz@muncher.com.co","fronteras":9,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Muncher&empresa=Muncher"},{"nombre":"Orso","correo":"info@orsoheladeria.com","fronteras":3,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Orso&empresa=Orso"},{"nombre":"PINTURAS EVERY","correo":"mantenimiento@pinturasevery.com","fronteras":1,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20PINTURAS%20EVERY&empresa=PINTURAS%20EVERY"},{"nombre":"Prolacop","correo":"sanferminhelado@gmail.com","fronteras":2,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Prolacop&empresa=Prolacop"},{"nombre":"SABANILLA SAS - Bogota DC (Dicel)","correo":"sabanilla@gmail.com","fronteras":1,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20SABANILLA%20SAS%20-%20Bogota%20DC%20%28Dicel%29&empresa=SABANILLA%20SAS%20-%20Bogota%20DC%20%28Dicel%29"},{"nombre":"Sunshine","correo":"jforero@sunshinebouquet.com","fronteras":10,"servicios":"Biamonitors","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Sunshine&empresa=Sunshine"},{"nombre":"The Pub","correo":"josemur@thepub.com.co","fronteras":3,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20The%20Pub&empresa=The%20Pub"},{"nombre":"Tins","correo":"gerencia.tins@gmail.com","fronteras":2,"servicios":"Bancos","fecha_envio":"2026-06-01","url":"https://ejecucionoperativaes.netlify.app/encuesta?nombre=Equipo%20Tins&empresa=Tins"}];
+
+// ── STATE ─────────────────────────────────────────────────────────
+// respondidas: set de correos que han respondido (se actualiza manualmente)
+const STORAGE_KEY = 'es_respondidas_v1';
+let respondidas = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+
+function saveRespondidas(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...respondidas]));
+}
+
+// Calcular días desde envío
+function diasDesde(fecha){
+  const hoy = new Date();
+  const env = new Date(fecha + 'T12:00:00');
+  return Math.floor((hoy - env) / (1000*60*60*24));
+}
+
+function urgenciaTag(dias){
+  if(dias >= 14) return ['tag-red','🔴 Urgente'];
+  if(dias >= 7)  return ['tag-amber','🟡 Medio'];
+  return ['tag-green','🟢 Reciente'];
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+const hoy = new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'});
+document.getElementById('fechaEnvio').textContent = hoy;
+document.getElementById('envioDate').textContent = hoy;
+
+const totalEnv = CLIENTES_ENVIADOS.length;
+document.getElementById('chipTotal').textContent = totalEnv + ' enviadas';
+
+let charts={};
+const gc='rgba(203,213,225,.5)',tc='#94a3b8';
+const tt={backgroundColor:'#1e293b',titleColor:'#f1f5f9',bodyColor:'#94a3b8',borderColor:'#334155',borderWidth:1,padding:9,cornerRadius:7};
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// ── FILTERS ───────────────────────────────────────────────────────
+function getFiltered(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const dias = parseInt(document.getElementById('fDias').value);
+  const svc = document.getElementById('fServicio').value.toLowerCase();
+  return CLIENTES_ENVIADOS.filter(c=>{
+    if(q && !c.nombre.toLowerCase().includes(q) && !c.correo.toLowerCase().includes(q)) return false;
+    if(dias > 0 && diasDesde(c.fecha_envio) < dias) return false;
+    if(svc && !c.servicios.toLowerCase().includes(svc)) return false;
+    return true;
+  });
+}
+
+// ── RENDER CHARTS ─────────────────────────────────────────────────
+function renderCharts(){
+  const respCount = respondidas.size;
+  const pendCount = totalEnv - respCount;
+
+  dc('estadoDonut');
+  const ctx1 = document.getElementById('estadoDonut').getContext('2d');
+  charts.estadoDonut = new Chart(ctx1,{type:'doughnut',data:{
+    labels:['Respondidas','Pendientes'],
+    datasets:[{data:[respCount,pendCount],
+      backgroundColor:['rgba(5,150,105,.75)','rgba(225,29,72,.75)'],
+      borderColor:['#059669','#e11d48'],borderWidth:2,hoverOffset:5}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'65%',
+      plugins:{legend:{position:'bottom',labels:{color:tc,font:{size:10},padding:10,boxWidth:10}},tooltip:tt}}});
+
+  // Fronteras bar
+  dc('fronterasBar');
+  const ctx2 = document.getElementById('fronterasBar').getContext('2d');
+  const top10 = [...CLIENTES_ENVIADOS].sort((a,b)=>b.fronteras-a.fronteras).slice(0,10);
+  charts.fronterasBar = new Chart(ctx2,{type:'bar',data:{
+    labels:top10.map(c=>c.nombre.split(' ').slice(0,2).join(' ')),
+    datasets:[{label:'Instalaciones',data:top10.map(c=>c.fronteras),
+      backgroundColor:top10.map(c=>respondidas.has(c.correo)?'rgba(5,150,105,.7)':'rgba(225,29,72,.7)'),
+      borderWidth:0,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>` ${c.parsed.y} instalaciones`}}},
+      scales:{y:{grid:{color:gc},ticks:{color:tc,font:{size:10}}},x:{grid:{display:false},ticks:{color:tc,font:{size:9},maxRotation:35}}}}});
+}
+
+// ── RENDER KPIs ───────────────────────────────────────────────────
+function renderKPIs(){
+  const respCount = respondidas.size;
+  const pendCount = totalEnv - respCount;
+  const tasa = Math.round((respCount/totalEnv)*100);
+  const dias = diasDesde(CLIENTES_ENVIADOS[0]?.fecha_envio || new Date().toISOString().split('T')[0]);
+
+  document.getElementById('kpi-respondidas').textContent = respCount;
+  document.getElementById('kpi-pendientes').textContent = pendCount;
+  document.getElementById('kpi-dias').textContent = dias;
+  document.getElementById('kpi-tasa').textContent = tasa+'%';
+  document.getElementById('kpi-resp-pct').textContent = tasa+'%';
+  document.getElementById('kpi-pend-pct').textContent = (100-tasa)+'%';
+
+  const tasaBadge = document.getElementById('kpi-tasa-badge');
+  if(tasa>=60){tasaBadge.textContent='✓ Meta cumplida';tasaBadge.className='kpi-badge badge-green';}
+  else if(tasa>=30){tasaBadge.textContent='↗ En progreso';tasaBadge.className='kpi-badge badge-amber';}
+  else{tasaBadge.textContent='↘ Bajo meta';tasaBadge.className='kpi-badge badge-red';}
+
+  document.getElementById('chipPend').textContent = pendCount + ' pendientes';
+  document.getElementById('chipResp').textContent = respCount + ' respondidas';
+}
+
+// ── RENDER TABLES ─────────────────────────────────────────────────
+function renderTables(){
+  const filtered = getFiltered();
+  const pendientes = filtered.filter(c=>!respondidas.has(c.correo));
+  const resp = filtered.filter(c=>respondidas.has(c.correo));
+
+  // ALL TABLE
+  const allTb = document.getElementById('allTable'); allTb.innerHTML='';
+  filtered.forEach(c=>{
+    const isResp = respondidas.has(c.correo);
+    const dias = diasDesde(c.fecha_envio);
+    const [urgCls, urgLbl] = urgenciaTag(dias);
+    allTb.innerHTML += `<tr>
+      <td style="font-weight:600;max-width:180px">${c.nombre}</td>
+      <td style="color:var(--slate-400);font-size:10px">${c.correo}</td>
+      <td style="text-align:center;font-weight:700;color:${c.fronteras>=10?'var(--red)':c.fronteras>=3?'var(--amber)':'var(--green)'}">${c.fronteras}</td>
+      <td style="font-size:10px;max-width:140px;color:var(--slate-600)">${c.servicios}</td>
+      <td style="white-space:nowrap;color:var(--slate-400)">${c.fecha_envio}</td>
+      <td style="text-align:center">
+        ${isResp ? '<span class="tag tag-green">✓ Respondió</span>' : `<span class="dias-badge ${urgCls}">${dias} días</span>`}
+      </td>
+      <td><span class="tag ${isResp?'tag-green':'tag-red'}">${isResp?'✅ Respondida':'⏳ Pendiente'}</span></td>
+      <td>
+        <div class="toggle-wrap">
+          <div class="toggle ${isResp?'on':''}" onclick="toggleRespondio('${c.correo}',this)" title="Marcar como respondida"></div>
+          <span style="font-size:10px;color:var(--slate-400)">${isResp?'Sí':'No'}</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <a href="${c.url}" target="_blank" class="btn-link">🔗 Link</a>
+          ${!isResp?`<button class="btn-reenviar" onclick="reenviarCorreo('${c.correo}','${c.nombre}','${c.url}')">↻ Reenviar</button>`:''}
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  // PENDIENTES TABLE
+  const pendTb = document.getElementById('pendTable'); pendTb.innerHTML='';
+  if(!pendientes.length){
+    pendTb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--slate-400)">🎉 ¡Todos han respondido!</td></tr>';
+  } else {
+    pendientes.sort((a,b)=>diasDesde(b.fecha_envio)-diasDesde(a.fecha_envio)).forEach(c=>{
+      const dias = diasDesde(c.fecha_envio);
+      const [urgCls, urgLbl] = urgenciaTag(dias);
+      pendTb.innerHTML += `<tr>
+        <td style="font-weight:600">${c.nombre}</td>
+        <td style="color:var(--slate-400);font-size:10px">${c.correo}</td>
+        <td style="text-align:center;font-weight:700;color:${c.fronteras>=10?'var(--red)':c.fronteras>=3?'var(--amber)':'var(--green)'}">${c.fronteras}</td>
+        <td style="font-size:10px;color:var(--slate-600)">${c.servicios}</td>
+        <td><span class="dias-badge tag tag-${dias>=14?'red':dias>=7?'amber':'green'}">${dias} días</span></td>
+        <td><span class="tag ${urgCls}">${urgLbl}</span></td>
+        <td><button class="btn-reenviar" onclick="reenviarCorreo('${c.correo}','${c.nombre}','${c.url}')">↻ Reenviar correo</button></td>
+        <td><a href="${c.url}" target="_blank" class="btn-link">🔗 Abrir encuesta</a></td>
+      </tr>`;
+    });
+  }
+
+  // RESPONDIDAS TABLE
+  const respTb = document.getElementById('respTable'); respTb.innerHTML='';
+  if(!resp.length){
+    respTb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--slate-400)">Aún no hay respuestas registradas</td></tr>';
+  } else {
+    resp.forEach(c=>{
+      respTb.innerHTML += `<tr>
+        <td style="font-weight:600">${c.nombre}</td>
+        <td style="color:var(--slate-400);font-size:10px">${c.correo}</td>
+        <td style="text-align:center;font-weight:700">${c.fronteras}</td>
+        <td style="font-size:10px;color:var(--slate-600)">${c.servicios}</td>
+        <td style="color:var(--slate-400)">${c.fecha_envio}</td>
+        <td><span class="tag tag-green">✅ Respondida</span></td>
+      </tr>`;
+    });
+  }
+}
+
+// ── TOGGLE RESPONDIÓ ──────────────────────────────────────────────
+function toggleRespondio(correo, el){
+  if(respondidas.has(correo)){
+    respondidas.delete(correo);
+    el.classList.remove('on');
+    el.nextElementSibling.textContent = 'No';
+  } else {
+    respondidas.add(correo);
+    el.classList.add('on');
+    el.nextElementSibling.textContent = 'Sí';
+  }
+  saveRespondidas();
+  renderKPIs();
+  renderCharts();
+  renderTables();
+}
+
+// ── REENVIAR ──────────────────────────────────────────────────────
+function reenviarCorreo(correo, nombre, url){
+  const asunto = encodeURIComponent('Recordatorio: Encuesta de satisfacción · Energy Solutions');
+  const cuerpo = encodeURIComponent(
+    'Estimado equipo de '+nombre+',\n\n'+
+    'Te recordamos que aún está pendiente tu encuesta de satisfacción de Energy Solutions.\n\n'+
+    'Por favor tómate 2 minutos para responderla:\n'+url+'\n\n'+
+    'Tu opinión es muy importante para nosotros.\n\nEquipo Energy Solutions'
+  );
+  window.open('mailto:'+correo+'?subject='+asunto+'&body='+cuerpo,'_blank');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function setTab(t){
+  document.querySelectorAll('.main-tab').forEach((b,i)=>b.classList.toggle('active',['seguimiento','pendientes','respondidas','netlify'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.getElementById('fechaEnvio').textContent = new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'});
+renderKPIs();
+renderCharts();
+renderTables();
+</script>
+</body>
+</html>
